@@ -1,54 +1,60 @@
 package main
 
 import (
-	"bufio" // Import bufio
+	"bufio"
 	"fmt"
 	"os"
 )
 
-func FilePath(filePath string) ([]string, error) {
-	// Open the file
-	f, err := os.Open(filePath)
+// LoadTemplate loads the ASCII template into a map
+func LoadTemplate(filePath string) (map[rune][]string, error) {
+	file, err := os.Open(filePath)
 	if err != nil {
-		// Improved error message for better clarity
-		return nil, fmt.Errorf("could not load the file %s: %v", filePath, err)
+		return nil, err
 	}
-	defer f.Close()
+	defer file.Close()
 
+	asciiMap := make(map[rune][]string)
+	scanner := bufio.NewScanner(file)
+
+	var character rune = ' '
 	var lines []string
 
-	// Create a scanner to read the file line by line
-	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if len(line) > 0 { // Only add non-empty lines
+		if line == "" {
+			// Move to next character in ASCII map
+			asciiMap[character] = lines
+			character++
+			lines = []string{}
+		} else {
 			lines = append(lines, line)
 		}
 	}
-
-	// Check if there was any error during scanning
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading the file %s: %v", filePath, err)
+	if len(lines) > 0 {
+		asciiMap[character] = lines
 	}
-
-	return lines, nil
+	return asciiMap, nil
 }
 
-
+// PrintASCII prints the ASCII representation for the given text
+func PrintASCII(asciiMap map[rune][]string, text string) {
+	for i := 0; i < 8; i++ { // assuming 8 lines per character
+		for _, char := range text {
+			fmt.Print(asciiMap[char][i])
+		}
+		fmt.Println()
+	}
+}
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Print("Put Valid Argument")
-		return
-	}
-
-	// Load templates from files
-	standardTemplate, err := FilePath("standard.txt")
+	asciiMap, err := LoadTemplate("standard.txt")
 	if err != nil {
-		fmt.Println("Could'nt find the:", err)
+		fmt.Println("Error loading template:", err)
 		return
 	}
 
-	// Map ASCII art to characters
-fmt.Print(standardTemplate)
+	// Example input
+text := "mno"
+	PrintASCII(asciiMap, text )
 }
